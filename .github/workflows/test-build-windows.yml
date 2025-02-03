@@ -72,10 +72,6 @@ jobs:
                 Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
             }
 
-            # Ensure we are in the correct base directory before switching
-            $baseDirectory = "${{ github.workspace }}"  # GitHub Actions workspace root
-            Set-Location -Path $baseDirectory
-              
             # Build API Dev App
             Write-Host "Building API Dev App..."
             Set-Location -Path "examples/api"
