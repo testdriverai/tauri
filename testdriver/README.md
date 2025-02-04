@@ -4,7 +4,7 @@ Hello! I'm going to show you how to create a new [TestDriver.ai](http://TestDriv
 
 ## How it works
 
-In the Tauri repo there is a directory called '**testdriver**' which holds all of our created [TestDriver.ai](http://TestDriver.ai) regression tests.
+In the Tauri repo there is a directory called '**testdriver**' which holds all of our created TestDriver.ai regression tests.
 
 Right now, the file .github/workflows/test-build-windows.yml is our main TestDrivier. workflow for building and testing the Tauri API validation application.
 
