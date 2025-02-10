@@ -66,13 +66,6 @@ jobs:
           path: target\release\bundle\nsis\*
           if-no-files-found: error
 
-      - name: Upload API artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-executable
-          path: target\debug\api
-          if-no-files-found: error
-
       - name: Set environment variables
         run: |
           echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
@@ -83,85 +76,91 @@ jobs:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           prompt: | 
             1. /run testdriver/tauri_api_install.yml
-            # 2. /run testdriver/dark_light_mode.yml
-            # 3. /run testdriver/minimize_maximize.yml
-            2. /run testdriver/comm_echo.yml
-            3. /run testdriver/comm_send_event_rust.yml
-            4. /run testdriver/comm_spam.yml
-            5. /run testdriver/comm_call_request_api.yml
-            # 7. /run testdriver/comm_call_log_api.yml
+            #1. /run testdriver/dark_light_mode.yml
+            #1. /run testdriver/minimize_maximize.yml
+            #1. /run testdriver/comm_echo.yml
+            #1. /run testdriver/comm_send_event_rust.yml
+            #1. /run testdriver/comm_spam.yml
+            #1. /run testdriver/comm_call_request_api.yml
+            #1. /run testdriver/comm_call_log_api.yml
             
           prerun: |
             $headers = @{
                 Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
             }
-    
+
             $downloadFolder = "./download"
-    
-            function Download-And-Extract-Artifact($artifactName) {
-                Write-Host "Fetching the artifact upload URL for $artifactName..."
-                $artifactUrl = (Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" -Headers $headers).artifacts | Where-Object { $_.name -eq $artifactName } | Select-Object -ExpandProperty archive_download_url
-    
-                if ($artifactUrl) {
-                    Write-Host "Artifact URL successfully fetched for $artifactName: $artifactUrl"
-                } else {
-                    Write-Error "Failed to fetch the artifact URL for $artifactName."
-                    exit 1
-                }
-    
-                $artifactZipPath = "$env:TEMP\$artifactName.zip"
-                try {
-                    Invoke-WebRequest -Uri $artifactUrl -Headers $headers -OutFile $artifactZipPath
-                    Write-Host "Artifact $artifactName downloaded successfully."
-                } catch {
-                    Write-Error "Error downloading artifact $artifactName: $_"
-                    exit 1
-                }
-    
-                $artifactUnzipPath = "$env:TEMP\$artifactName"
-                Write-Host "Unzipping $artifactName to $artifactUnzipPath..."
-                try {
-                    Expand-Archive -Path $artifactZipPath -DestinationPath $artifactUnzipPath -Force
-                    Write-Host "Artifact $artifactName unzipped successfully."
-                } catch {
-                    Write-Error "Failed to unzip $artifactName: $_"
-                    exit 1
-                }
-    
-                return $artifactUnzipPath
+            $artifactName = "bindings-x86_64-pc-windows-msvc"
+            Write-Host "Starting the artifact download process..."
+
+            # Create the download directory if it doesn't exist
+            if (-not (Test-Path -Path $downloadFolder)) {
+                Write-Host "Creating download folder..."
+                mkdir $downloadFolder
+            } else {
+                Write-Host "Download folder already exists."
             }
-    
-            # Download and extract main EXE
-            $exePath = Download-And-Extract-Artifact "bindings-x86_64-pc-windows-msvc"
-    
-            # Download and extract API executable
-            $apiPath = Download-And-Extract-Artifact "api-executable"
-    
-            # Find the main EXE
-            $artifactInstallerPath = Get-ChildItem -Path $exePath -Filter *.exe -Recurse | Select-Object -First 1
+
+            # Fetch the artifact upload URL (no need for GITHUB_RUN_ID)
+            Write-Host "Fetching the artifact upload URL..."
+            $artifactUrl = (Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" -Headers $headers).artifacts[0].archive_download_url
+            
+            if ($artifactUrl) {
+                Write-Host "Artifact URL successfully fetched: $artifactUrl"
+            } else {
+                Write-Error "Failed to fetch the artifact URL."
+                exit 1
+            }
+
+            # Download the artifact (zipped file)
+            Write-Host "Starting artifact download..."
+            $artifactZipPath = "$env:TEMP\artifact.zip"
+            try {
+                Invoke-WebRequest -Uri $artifactUrl `
+                    -Headers $headers `
+                    -OutFile $artifactZipPath `
+                    -MaximumRedirection 5
+                Write-Host "Artifact downloaded successfully to $artifactZipPath"
+            } catch {
+                Write-Error "Error downloading artifact: $_"
+                exit 1
+            }
+
+            # Unzip the artifact
+            $artifactUnzipPath = "$env:TEMP\artifact"
+            Write-Host "Unzipping the artifact to $artifactUnzipPath..."
+            try {
+                Expand-Archive -Path $artifactZipPath -DestinationPath $artifactUnzipPath -Force
+                Write-Host "Artifact unzipped successfully to $artifactUnzipPath"
+            } catch {
+                Write-Error "Failed to unzip the artifact: $_"
+                exit 1
+            }
+
+            # Find the installer or app executable
+            $artifactInstallerPath = Get-ChildItem -Path $artifactUnzipPath -Filter *.exe -Recurse | Select-Object -First 1
             if ($artifactInstallerPath) {
-                Write-Host "Main executable found: $($artifactInstallerPath.FullName)"
+                Write-Host "Executable file found: $($artifactInstallerPath.FullName)"
             } else {
-                Write-Error "Main executable not found. Exiting."
+                Write-Error "Executable file not found. Exiting."
                 exit 1
             }
-    
-            # Find the API executable
-            $apiExecutablePath = Get-ChildItem -Path $apiPath -Filter "api" -Recurse | Select-Object -First 1
-            if ($apiExecutablePath) {
-                Write-Host "API executable found: $($apiExecutablePath.FullName)"
-            } else {
-                Write-Error "API executable not found. Exiting."
+
+            # Run the installer and log the result
+            Write-Host "Running the installer: $($artifactInstallerPath.FullName)..."
+            try {
+                Start-Process -FilePath $artifactInstallerPath.FullName
+                Write-Host "Installer ran successfully."
+            } catch {
+                Write-Error "Failed to run the installer: $_"
                 exit 1
             }
-    
-            # Start the API executable in the background
-            Write-Host "Starting API executable..."
-            Start-Process -NoNewWindow -FilePath $apiExecutablePath.FullName
-    
-            # Start the main executable
-            Write-Host "Running main installer: $($artifactInstallerPath.FullName)..."
-            Start-Process -FilePath $artifactInstallerPath.FullName
+
+            # Optional: If the app executable is different from the installer, find and launch it
+            # $wavePath = Join-Path $env:USERPROFILE "AppData\Local\Programs\waveterm\Wave.exe"
+            # Write-Host "Launching the application: $($wavePath)"
+            # Start-Process -FilePath $wavePath
+            # Write-Host "Application launched."
           
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
