@@ -1,0 +1,42 @@
+version: 4.1.42
+steps:
+  - prompt: minimize the Tauri API app
+    commands:
+      - command: hover-text
+        text: Minimize
+        description: minimize button in the Tauri API app window
+        action: click
+  - prompt: minimize the Tauri API app
+    commands:
+      - command: hover-text
+        text: Tauri API
+        description: Tauri API app window title bar
+        action: click
+      - command: press-keys
+        keys:
+          - command
+          - m
+  - prompt: assert the tauri app is minimized
+    commands:
+      - command: assert
+        expect: the Tauri app is minimized
+  - prompt: restore the tauri app by searching for it
+    commands:
+      - command: press-keys
+        keys:
+          - command
+          - space
+  - prompt: restore the tauri app by searching for it
+    commands:
+      - command: type
+        text: Tauri
+  - prompt: restore the tauri app by searching for it
+    commands:
+      - command: hover-text
+        text: Tauri API
+        description: Tauri app in Spotlight Search results
+        action: click
+  - prompt: assert that the tauri window is visible
+    commands:
+      - command: assert
+        expect: the Tauri window is visible
