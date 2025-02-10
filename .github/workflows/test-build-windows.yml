@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 name: Build EXE for TestDriver
+
 env:
   DEBUG: napi:*
 
@@ -15,23 +16,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - run: corepack enable
+
       - name: Install pnpm explicitly
         run: |
           npm install -g pnpm
-          pnpm --version  # Verify pnpm is installed and available
+          pnpm --version # Verify pnpm is installed and available
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: pnpm
           architecture: x64
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-          
+
       - name: Install dependencies (root)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
@@ -46,11 +49,10 @@ jobs:
       - name: Build API
         run: pnpm run build:api
         shell: bash
-        
+
       - name: Run app in dev mode (background)
         working-directory: examples/api
-        run: |
-          Start-Process -NoNewWindow -FilePath "cmd.exe" -ArgumentList "/c pnpm tauri dev"
+        run: Start-Process -NoNewWindow -FilePath "cmd.exe" -ArgumentList "/c pnpm tauri dev"
         shell: powershell
 
       - name: Build API Example App
@@ -72,7 +74,7 @@ jobs:
       - uses: testdriverai/action@main
         with:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
-          prompt: | 
+          prompt: |
             1. /run testdriver/tauri_api_install.yml
             2. /run testdriver/create_window.yml
             3. /run testdriver/dark_light_mode.yml
@@ -83,10 +85,10 @@ jobs:
             #1. /run testdriver/comm_spam.yml
             #1. /run testdriver/comm_call_request_api.yml
             #1. /run testdriver/comm_call_log_api.yml
-            
+
           prerun: |
             $headers = @{
-                Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+              Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
             }
 
             $downloadFolder = "./download"
@@ -95,73 +97,67 @@ jobs:
 
             # Create the download directory if it doesn't exist
             if (-not (Test-Path -Path $downloadFolder)) {
-                Write-Host "Creating download folder..."
-                mkdir $downloadFolder
+              Write-Host "Creating download folder..."
+              mkdir $downloadFolder
             } else {
-                Write-Host "Download folder already exists."
+              Write-Host "Download folder already exists."
             }
 
             # Fetch the artifact upload URL (no need for GITHUB_RUN_ID)
             Write-Host "Fetching the artifact upload URL..."
             $artifactUrl = (Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" -Headers $headers).artifacts[0].archive_download_url
-            
+
             if ($artifactUrl) {
-                Write-Host "Artifact URL successfully fetched: $artifactUrl"
+              Write-Host "Artifact URL successfully fetched: $artifactUrl"
             } else {
-                Write-Error "Failed to fetch the artifact URL."
-                exit 1
+              Write-Error "Failed to fetch the artifact URL."
+              exit 1
             }
 
             # Download the artifact (zipped file)
             Write-Host "Starting artifact download..."
             $artifactZipPath = "$env:TEMP\artifact.zip"
             try {
-                Invoke-WebRequest -Uri $artifactUrl `
-                    -Headers $headers `
-                    -OutFile $artifactZipPath `
-                    -MaximumRedirection 5
-                Write-Host "Artifact downloaded successfully to $artifactZipPath"
+              Invoke-WebRequest -Uri $artifactUrl `
+                -Headers $headers `
+                -OutFile $artifactZipPath `
+                -MaximumRedirection 5
+              Write-Host "Artifact downloaded successfully to $artifactZipPath"
             } catch {
-                Write-Error "Error downloading artifact: $_"
-                exit 1
+              Write-Error "Error downloading artifact: $_"
+              exit 1
             }
 
             # Unzip the artifact
             $artifactUnzipPath = "$env:TEMP\artifact"
             Write-Host "Unzipping the artifact to $artifactUnzipPath..."
             try {
-                Expand-Archive -Path $artifactZipPath -DestinationPath $artifactUnzipPath -Force
-                Write-Host "Artifact unzipped successfully to $artifactUnzipPath"
+              Expand-Archive -Path $artifactZipPath -DestinationPath $artifactUnzipPath -Force
+              Write-Host "Artifact unzipped successfully to $artifactUnzipPath"
             } catch {
-                Write-Error "Failed to unzip the artifact: $_"
-                exit 1
+              Write-Error "Failed to unzip the artifact: $_"
+              exit 1
             }
 
             # Find the installer or app executable
             $artifactInstallerPath = Get-ChildItem -Path $artifactUnzipPath -Filter *.exe -Recurse | Select-Object -First 1
             if ($artifactInstallerPath) {
-                Write-Host "Executable file found: $($artifactInstallerPath.FullName)"
+              Write-Host "Executable file found: $($artifactInstallerPath.FullName)"
             } else {
-                Write-Error "Executable file not found. Exiting."
-                exit 1
+              Write-Error "Executable file not found. Exiting."
+              exit 1
             }
 
             # Run the installer and log the result
             Write-Host "Running the installer: $($artifactInstallerPath.FullName)..."
             try {
-                Start-Process -FilePath $artifactInstallerPath.FullName
-                Write-Host "Installer ran successfully."
+              Start-Process -FilePath $artifactInstallerPath.FullName
+              Write-Host "Installer ran successfully."
             } catch {
-                Write-Error "Failed to run the installer: $_"
-                exit 1
+              Write-Error "Failed to run the installer: $_"
+              exit 1
             }
 
-            # Optional: If the app executable is different from the installer, find and launch it
-            # $wavePath = Join-Path $env:USERPROFILE "AppData\Local\Programs\waveterm\Wave.exe"
-            # Write-Host "Launching the application: $($wavePath)"
-            # Start-Process -FilePath $wavePath
-            # Write-Host "Application launched."
-          
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
