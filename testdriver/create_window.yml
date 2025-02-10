@@ -1,0 +1,48 @@
+version: 4.1.42
+steps:
+  - prompt: focus tauri API Validation
+    commands:
+      - command: hover-text
+        text: Tauri API Validation
+        description: window title of the Tauri API Validation application
+        action: click
+  - prompt: Click the Window button
+    commands:
+      - command: hover-text
+        text: Window
+        description: Window button in the Tauri API sidebar
+        action: click
+  - prompt: Type 'test' for New window label, then click create
+    commands:
+      - command: focus-application
+        name: Tauri API Validation
+      - command: hover-text
+        text: New window label
+        description: input field for new window label
+        action: click
+      - command: type
+        text: test
+      - command: hover-text
+        text: Create
+        description: button to create a new window
+        action: click
+  - prompt: assert that a new tauri app window has been created
+    commands:
+      - command: hover-text
+        text: Tauri App
+        description: window title of the Tauri application
+        action: hover
+      - command: assert
+        expect: the Tauri app window is visible
+  - prompt: >-
+      close the newly created Tauri App window, ensuring only one Tauri window
+      is open
+    commands:
+      - command: hover-text
+        text: Tauri App
+        description: title of the Tauri App window
+        action: click
+      - command: press-keys
+        keys:
+          - command
+          - w
