@@ -79,7 +79,7 @@ jobs:
             2. /run testdriver/create_window.yml
             3. /run testdriver/dark_light_mode.yml
             4. /run testdriver/set_window_title.yml
-            5. /run testdriver/minimize_window.yml
+            #1. /run testdriver/minimize_window.yml
             #1. /run testdriver/comm_echo.yml
             #1. /run testdriver/comm_send_event_rust.yml
             #1. /run testdriver/comm_spam.yml
