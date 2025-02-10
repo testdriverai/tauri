@@ -76,7 +76,9 @@ jobs:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           prompt: | 
             1. /run testdriver/tauri_api_install.yml
-            #1. /run testdriver/dark_light_mode.yml
+            2. /run testdriver/create_window.yml
+            3. /run testdriver/set_window_title.yml
+            4. /run testdriver/dark_light_mode.yml
             #1. /run testdriver/minimize_maximize.yml
             #1. /run testdriver/comm_echo.yml
             #1. /run testdriver/comm_send_event_rust.yml
