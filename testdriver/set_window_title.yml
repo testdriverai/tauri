@@ -1,0 +1,47 @@
+version: 4.1.42
+steps:
+  - prompt: click window in the Tauri App sidebar
+    commands:
+      - command: focus-application
+        name: Tauri API Validation
+      - command: hover-text
+        text: Window
+        description: window option in the Tauri App sidebar
+        action: click
+  - prompt: Click Set under Set Window Title
+    commands:
+      - command: focus-application
+        name: Tauri API Validation
+      - command: hover-text
+        text: Set
+        description: set button under Set Window Title in the Tauri App
+        action: click
+  - prompt: assert that the Tauri App windows title says Awesome Tauri Example!
+    commands:
+      - command: focus-application
+        name: Tauri API Validation
+      - command: assert
+        expect: the window title is "Awesome Tauri Example!"
+  - prompt: >-
+      In the field under Set Window Title, erase the existing test and type
+      Tauri API Validation and then click Set
+    commands:
+      - command: focus-application
+        name: Tauri API Validation
+      - command: hover-text
+        text: Awesome Tauri Example!
+        description: input field under Set Window Title
+        action: click
+      - command: press-keys
+        keys:
+          - command
+          - a
+      - command: press-keys
+        keys:
+          - backspace
+      - command: type
+        text: Tauri API Validation
+      - command: hover-text
+        text: Set
+        description: set button under Set Window Title
+        action: click
